@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pochi — Contributor Registration</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--g:#00A651;--gl:#E8F8EF;--dk:#1A1A2E;--sf:#F7F8FA;--w:#fff;--am:#F59E0B;--aml:#FEF3E2;--t1:#1A1A2E;--t2:#4B5563;--t3:#9CA3AF;--b1:#E5E7EB;--b2:#D1D5DB}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--sf);color:var(--t1);min-height:100vh}
+.sc{display:none}
+.sc.on{display:block}
+
+/* HEADER */
+.h-dk{background:var(--dk);padding:16px 16px 20px}
+.h-gn{background:var(--g);padding:20px 16px;text-align:center}
+.logo-bar{display:flex;align-items:center;gap:7px;margin-bottom:14px}
+.lm{width:24px;height:24px;background:var(--g);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700}
+.ln{font-size:15px;font-weight:500;color:#fff}
+.fund-box{background:rgba(255,255,255,.07);border:0.5px solid rgba(255,255,255,.1);border-radius:10px;padding:13px}
+.fn{font-size:14px;font-weight:500;color:#fff;margin-bottom:2px}
+.fo{font-size:11px;color:#9CA3AF;margin-bottom:10px}
+.prog{height:5px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;margin-bottom:7px}
+.prog-f{height:100%;background:var(--g);border-radius:3px}
+.fstats{display:grid;grid-template-columns:repeat(4,1fr)}
+.fsv{font-size:12px;font-weight:500;color:#fff;text-align:center}
+.fsl{font-size:9px;color:#9CA3AF;text-align:center;margin-top:2px}
+
+/* BODY */
+.body{padding:16px}
+.card{background:var(--w);border:0.5px solid var(--b1);border-radius:12px;padding:16px;margin-bottom:12px}
+.card-t{font-size:15px;font-weight:600;color:var(--t1);margin-bottom:4px}
+.card-s{font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:14px}
+.trust{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;background:var(--gl);border:0.5px solid rgba(0,166,81,.2);border-radius:8px;margin-bottom:14px}
+.trust-t{font-size:11px;color:#166534;line-height:1.5}
+.fg{margin-bottom:14px}
+.fl{font-size:12px;font-weight:500;color:var(--t2);display:block;margin-bottom:4px}
+.fi{width:100%;padding:11px 13px;border-radius:8px;border:0.5px solid var(--b2);background:var(--sf);font-size:14px;font-family:inherit;color:var(--t1);outline:none;-webkit-appearance:none}
+.fi.on{border-color:var(--g);background:var(--w);box-shadow:0 0 0 3px rgba(0,166,81,.1)}
+.fh{font-size:11px;color:var(--t3);margin-top:4px}
+.fh.ok{color:var(--g)}
+.ph-r{display:flex}
+.ph-p{padding:11px 11px;background:var(--sf);border:0.5px solid var(--b2);border-right:none;border-radius:8px 0 0 8px;font-size:14px;color:var(--t2);white-space:nowrap;display:flex;align-items:center}
+.ph-i{flex:1;padding:11px 12px;border-radius:0 8px 8px 0;border:0.5px solid var(--b2);border-left:none;background:var(--sf);font-size:14px;font-family:inherit;color:var(--t1);outline:none}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip{padding:5px 12px;border-radius:16px;border:0.5px solid var(--b2);background:var(--sf);font-size:11px;font-weight:500;color:var(--t2);cursor:pointer}
+.chip.on{background:var(--gl);border-color:var(--g);color:var(--g)}
+.btn-g{width:100%;padding:13px;background:var(--g);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-g:active{background:#008040}
+.btn-o{width:100%;padding:12px;background:transparent;color:var(--t2);border:0.5px solid var(--b2);border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px}
+.tos{font-size:10px;color:var(--t3);text-align:center;margin-top:10px;line-height:1.6}
+.tos a{color:var(--g);text-decoration:none}
+
+/* SUMMARY ROWS */
+.row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--b1)}
+.row:last-child{border-bottom:none;padding-bottom:0}
+.rl{font-size:12px;color:var(--t2)}
+.rv{font-size:12px;font-weight:500;color:var(--t1)}
+
+/* DARK CARD */
+.dk-card{background:var(--dk);border-radius:12px;padding:14px;margin-bottom:12px}
+.dk-t{font-size:13px;font-weight:600;color:#fff;margin-bottom:3px}
+.dk-s{font-size:11px;color:#9CA3AF;line-height:1.5;margin-bottom:10px}
+.dk-row{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:rgba(255,255,255,.07);border-radius:6px;margin-bottom:5px}
+.dk-row:last-child{margin-bottom:0}
+.dkl{font-size:10px;color:#9CA3AF}
+.dkv{font-size:11px;font-weight:500;color:#fff;font-family:monospace}
+
+/* WHATSAPP NOTE */
+.wa-note{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;background:#E8FEF0;border:0.5px solid rgba(37,211,102,.2);border-radius:8px;margin-bottom:10px}
+.wa-note-t{font-size:11px;color:#166534;line-height:1.5}
+
+/* WARN */
+.warn{display:flex;align-items:flex-start;gap:8px;background:var(--aml);border:0.5px solid rgba(245,158,11,.2);border-radius:8px;padding:11px;margin-bottom:10px}
+.warn-t{font-size:12px;font-weight:600;color:#92400E;margin-bottom:2px}
+.warn-s{font-size:11px;color:#B45309;line-height:1.5}
+
+/* SUCCESS HEADER */
+.success-icon{width:56px;height:56px;background:rgba(255,255,255,.15);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:28px}
+.success-t{font-size:18px;font-weight:600;color:#fff;margin-bottom:6px}
+.success-s{font-size:12px;color:rgba(255,255,255,.9);line-height:1.6}
+
+/* STK HEADER */
+.stk-icon{width:56px;height:56px;background:rgba(0,166,81,.15);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:28px}
+.stk-t{font-size:18px;font-weight:600;color:#fff;margin-bottom:6px}
+.stk-s{font-size:12px;color:#9CA3AF;line-height:1.6}
+
+/* PULSE */
+.pulse{display:inline-block;width:8px;height:8px;background:var(--am);border-radius:50%;animation:pu 1.2s infinite;margin-right:5px;vertical-align:middle}
+@keyframes pu{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}
+
+/* NAV PILLS */
+.nav-pills{display:flex;gap:6px;padding:12px 16px;background:var(--w);border-bottom:0.5px solid var(--b1);overflow-x:auto}
+.np{padding:6px 13px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:0.5px solid var(--b2);background:var(--sf);color:var(--t2);white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.np.on{background:var(--g);color:#fff;border-color:var(--g)}
+</style>
+</head>
+<body>
+
+<div class="nav-pills">
+  <button class="np on" id="n1" onclick="go(1)">Step 1 — Register</button>
+  <button class="np" id="n2" onclick="go(2)">Step 2 — Payment</button>
+  <button class="np" id="n3" onclick="go(3)">Step 3 — STK Push</button>
+</div>
+
+<!-- SCREEN 1 — REGISTRATION FORM -->
+<div class="sc on" id="s1">
+  <div class="h-dk">
+    <div class="logo-bar">
+      <div class="lm">P</div>
+      <div class="ln">Pochi</div>
+    </div>
+    <div class="fund-box">
+      <div class="fn">Wanjiru Kitchen Harambee</div>
+      <div class="fo">By Grace Wanjiru · Deadline 20 May 2025</div>
+      <div class="prog"><div class="prog-f" style="width:77%"></div></div>
+      <div class="fstats">
+        <div><div class="fsv">38.5k</div><div class="fsl">Raised</div></div>
+        <div><div class="fsv" style="color:var(--g)">77%</div><div class="fsl">of 50k</div></div>
+        <div><div class="fsv">42</div><div class="fsl">People</div></div>
+        <div><div class="fsv">7</div><div class="fsl">Days left</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="body">
+    <div class="card">
+      <div class="card-t">Join this fundraiser</div>
+      <div class="card-s">Register your contribution. Your name will appear in the WhatsApp group when you pay.</div>
+      <div class="trust">
+        <span style="font-size:16px">🛡️</span>
+        <div class="trust-t">Money goes directly to Grace's Paybill — Pochi never holds your funds</div>
+      </div>
+      <div class="fg">
+        <label class="fl">Your full name</label>
+        <input class="fi on" value="Brian Otieno" readonly/>
+        <div class="fh">Same name as your M-Pesa account</div>
+      </div>
+      <div class="fg">
+        <label class="fl">Phone number</label>
+        <div class="ph-r">
+          <div class="ph-p">🇰🇪 +254</div>
+          <input class="ph-i" value="733 234 567" readonly/>
+        </div>
+        <div class="fh ok">✓ M-Pesa number verified</div>
+      </div>
+      <div class="fg">
+        <label class="fl">Pledge amount (KES)</label>
+        <input class="fi" value="1,500" readonly/>
+        <div class="chips">
+          <span class="chip" onclick="setChip(this,'500')">500</span>
+          <span class="chip" onclick="setChip(this,'1,000')">1,000</span>
+          <span class="chip on" onclick="setChip(this,'1,500')">1,500</span>
+          <span class="chip" onclick="setChip(this,'2,000')">2,000</span>
+          <span class="chip" onclick="setChip(this,'5,000')">5,000</span>
+        </div>
+        <div class="fh">Total you plan to contribute</div>
+      </div>
+      <button class="btn-g" onclick="go(2)">✓ Register my contribution</button>
+      <div class="tos">By registering you agree to Pochi's <a href="#">Terms</a> and <a href="#">Privacy Policy</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 2 — PAYMENT INSTRUCTIONS -->
+<div class="sc" id="s2">
+  <div class="h-gn">
+    <div class="success-icon">✅</div>
+    <div class="success-t">You're registered! 🎉</div>
+    <div class="success-s">Your pledge of KES 1,500 has been recorded for Wanjiru Kitchen Harambee</div>
+  </div>
+  <div class="body">
+    <div class="card">
+      <div class="card-t" style="font-size:14px;margin-bottom:10px">Your summary</div>
+      <div class="row"><div class="rl">Name</div><div class="rv">Brian Otieno</div></div>
+      <div class="row"><div class="rl">Phone</div><div class="rv">+254 733 234 567</div></div>
+      <div class="row"><div class="rl">Pledge</div><div class="rv" style="color:var(--g)">KES 1,500</div></div>
+      <div class="row"><div class="rl">Paid so far</div><div class="rv" style="color:var(--am)">KES 0 — pending</div></div>
+    </div>
+    <div class="dk-card">
+      <div class="dk-t">Now send your money</div>
+      <div class="dk-s">Use the reference below so Pochi matches your payment automatically.</div>
+      <div class="dk-row"><div class="dkl">Paybill number</div><div class="dkv">522522</div></div>
+      <div class="dk-row"><div class="dkl">Account reference</div><div class="dkv">PCH-WK92</div></div>
+      <div class="dk-row" style="margin-bottom:10px"><div class="dkl">Amount</div><div class="dkv" style="color:var(--g)">KES 1,500</div></div>
+      <button class="btn-g" onclick="go(3)">📱 Pay via M-Pesa STK Push</button>
+    </div>
+    <div class="wa-note">
+      <span style="font-size:18px">💬</span>
+      <div class="wa-note-t">Once your payment lands, Pochi posts a confirmation in the WhatsApp group automatically. Nothing else needed from you.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 3 — STK PUSH -->
+<div class="sc" id="s3">
+  <div class="h-dk" style="text-align:center;padding:24px 16px">
+    <div class="stk-icon">📲</div>
+    <div class="stk-t">Check your phone!</div>
+    <div class="stk-s">An M-Pesa prompt was sent to +254 733 234 567. Enter your PIN to complete payment.</div>
+  </div>
+  <div class="body">
+    <div class="card">
+      <div class="card-t" style="font-size:14px;margin-bottom:10px">Payment request details</div>
+      <div class="row"><div class="rl">Amount</div><div class="rv" style="color:var(--g)">KES 1,500</div></div>
+      <div class="row"><div class="rl">To Paybill</div><div class="rv">522522</div></div>
+      <div class="row"><div class="rl">Reference</div><div class="rv" style="font-family:monospace">PCH-WK92</div></div>
+      <div class="row">
+        <div class="rl">Status</div>
+        <div style="display:flex;align-items:center">
+          <span class="pulse"></span>
+          <span style="font-size:12px;font-weight:500;color:var(--am)">Waiting for PIN...</span>
+        </div>
+      </div>
+    </div>
+    <div class="warn">
+      <span style="font-size:18px">⏱️</span>
+      <div>
+        <div class="warn-t">Request expires in 2:30</div>
+        <div class="warn-s">Check your phone notifications for the M-Pesa PIN prompt. Tap Resend if you don't see it.</div>
+      </div>
+    </div>
+    <button class="btn-g">🔄 Resend payment request</button>
+    <button class="btn-o">🏦 Pay manually instead</button>
+    <div class="wa-note" style="margin-top:10px">
+      <span style="font-size:18px">💬</span>
+      <div class="wa-note-t">Once your PIN is entered, Pochi confirms and updates the WhatsApp group instantly.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function go(n){
+  [1,2,3].forEach(function(i){
+    document.getElementById('s'+i).className='sc'+(i===n?' on':'');
+    document.getElementById('n'+i).className='np'+(i===n?' on':'');
+  });
+  window.scrollTo(0,0);
+}
+function setChip(el,val){
+  document.querySelectorAll('.chip').forEach(function(c){c.className='chip'});
+  el.className='chip on';
+  document.querySelector('#s1 .fi:not(.on)').value=val;
+}
+</script>
+</body>
+</html>

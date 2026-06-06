@@ -1,0 +1,193 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SubscriptionPlan {
+  spark
+  solo
+  group
+  enterprise
+}
+
+enum SubscriptionStatus {
+  active
+  expired
+  trial
+}
+
+enum FundraiserStatus {
+  active
+  paused
+  closed
+}
+
+enum PledgeStatus {
+  unpledged
+  pledged
+  partial
+  complete
+  overpaid
+}
+
+enum MatchStatus {
+  auto_matched
+  manually_matched
+  unmatched
+}
+
+enum MatchedBy {
+  system
+  organizer
+}
+
+enum MessageType {
+  group_update
+  confirmation
+  reminder
+  registration
+}
+
+enum MessageStatus {
+  sent
+  delivered
+  failed
+}
+
+enum SubscriptionPlanType {
+  spark
+  solo_monthly
+  solo_quarterly
+  solo_biannual
+  solo_annual
+  group
+  enterprise
+}
+
+enum SubscriptionRecordStatus {
+  active
+  expired
+  cancelled
+}
+
+model Organizer {
+  id                      String             @id @default(uuid())
+  phone_number            String             @unique @db.VarChar(15)
+  full_name               String             @db.VarChar(100)
+  email                   String?            @db.VarChar(150)
+  password_hash           String             @db.VarChar(255)
+  otp_code                String?            @db.VarChar(255)
+  otp_expires_at          DateTime?
+  otp_attempts            Int                @default(0)
+  otp_locked_until        DateTime?
+  is_verified             Boolean            @default(false)
+  subscription_plan       SubscriptionPlan   @default(spark)
+  subscription_status     SubscriptionStatus @default(trial)
+  subscription_expires_at DateTime?
+  created_at              DateTime           @default(now())
+  updated_at              DateTime           @updatedAt
+  fundraisers             Fundraiser[]
+  subscriptions           Subscription[]
+}
+
+model Fundraiser {
+  id                        String            @id @default(uuid())
+  organizer_id              String
+  organizer                 Organizer         @relation(fields: [organizer_id], references: [id])
+  title                     String            @db.VarChar(150)
+  description               String?
+  target_amount             Int
+  total_pledged             Int               @default(0)
+  total_paid                Int               @default(0)
+  paybill_number            String?           @db.VarChar(20)
+  till_number               String?           @db.VarChar(20)
+  account_reference         String            @unique @db.VarChar(20)
+  whatsapp_group_id         String?           @db.VarChar(100)
+  bot_phone_number          String?           @db.VarChar(15)
+  daraja_webhook_registered Boolean           @default(false)
+  registration_link_token   String            @unique @db.VarChar(50)
+  status                    FundraiserStatus  @default(active)
+  deadline                  DateTime?
+  created_at                DateTime          @default(now())
+  updated_at                DateTime          @updatedAt
+  contributors              Contributor[]
+  transactions              Transaction[]
+  whatsapp_messages         WhatsappMessage[]
+}
+
+model Contributor {
+  id               String       @id @default(uuid())
+  fundraiser_id    String
+  fundraiser       Fundraiser   @relation(fields: [fundraiser_id], references: [id])
+  full_name        String       @db.VarChar(100)
+  phone_number     String       @db.VarChar(15)
+  whatsapp_name    String?      @db.VarChar(100)
+  pledge_amount    Int          @default(0)
+  paid_amount      Int          @default(0)
+  pledge_status    PledgeStatus @default(unpledged)
+  registered_at    DateTime     @default(now())
+  last_payment_at  DateTime?
+  reminder_count   Int          @default(0)
+  last_reminder_at DateTime?
+  notes            String?
+  transactions     Transaction[]
+}
+
+model Transaction {
+  id                   String       @id @default(uuid())
+  fundraiser_id        String
+  fundraiser           Fundraiser   @relation(fields: [fundraiser_id], references: [id])
+  contributor_id       String?
+  contributor          Contributor? @relation(fields: [contributor_id], references: [id])
+  mpesa_transaction_id String       @unique @db.VarChar(20)
+  mpesa_sender_name    String       @db.VarChar(100)
+  mpesa_sender_phone   String       @db.VarChar(15)
+  amount               Int
+  account_reference    String?      @db.VarChar(50)
+  match_status         MatchStatus  @default(unmatched)
+  matched_at           DateTime?
+  matched_by           MatchedBy?
+  daraja_raw_payload   Json
+  received_at          DateTime     @default(now())
+}
+
+model WhatsappMessage {
+  id            String        @id @default(uuid())
+  fundraiser_id String
+  fundraiser    Fundraiser    @relation(fields: [fundraiser_id], references: [id])
+  recipient     String        @db.VarChar(15)
+  message_type  MessageType
+  message_body  String
+  status        MessageStatus @default(sent)
+  at_message_id String?       @db.VarChar(100)
+  sent_at       DateTime      @default(now())
+}
+
+model Subscription {
+  id                   String                   @id @default(uuid())
+  organizer_id         String
+  organizer            Organizer                @relation(fields: [organizer_id], references: [id])
+  plan                 SubscriptionPlanType
+  amount_paid          Int
+  duration_months      Int
+  starts_at            DateTime
+  expires_at           DateTime
+  mpesa_transaction_id String                   @db.VarChar(20)
+  status               SubscriptionRecordStatus @default(active)
+  created_at           DateTime                 @default(now())
+}
+
+model StkPushRequest {
+  id                  String   @id @default(uuid())
+  organizer_id        String
+  plan_id             String   @db.VarChar(30)
+  checkout_request_id String   @unique @db.VarChar(100)
+  amount              Int
+  status              String   @default("pending")
+  created_at          DateTime @default(now())
+  expires_at          DateTime
+}

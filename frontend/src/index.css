@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@theme {
+  --color-pochi-green: #00A651;
+  --color-pochi-navy: #1A1A2E;
+  --color-pochi-surface: #F7F8FA;
+  --color-pochi-text: #1A1A2E;
+  --color-pochi-text-secondary: #4B5563;
+  --color-pochi-text-tertiary: #9CA3AF;
+  --color-pochi-border: #E5E7EB;
+  --color-pochi-error: #E53935;
+  --color-pochi-warning: #F59E0B;
+  --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: #F7F8FA;
+  color: #1A1A2E;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
