@@ -13,10 +13,11 @@ const generateOtp = () => {
 };
 
 const sendOtpSms = async (phone, otp) => {
-  if (process.env.NODE_ENV === 'development' && !process.env.AT_API_KEY) {
+  if (process.env.NODE_ENV === 'development' || process.env.AT_USERNAME === 'sandbox') {
     console.log(`[DEV] OTP for ${phone}: ${otp}`);
-    return;
   }
+
+  if (!process.env.AT_API_KEY) return;
 
   const AfricasTalking = require('africastalking')({
     apiKey: process.env.AT_API_KEY,
