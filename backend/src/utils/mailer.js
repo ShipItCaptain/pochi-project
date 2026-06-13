@@ -6,6 +6,7 @@ const sendOtpEmail = async (email, otp, expiryMinutes) => {
     return;
   }
 
+  console.log(`[MAIL] Sending OTP to ${email} via Resend`);
   await axios.post(
     'https://api.resend.com/emails',
     {
@@ -39,6 +40,7 @@ const sendOtpEmail = async (email, otp, expiryMinutes) => {
       },
     }
   );
+  console.log(`[MAIL] OTP sent to ${email} successfully`);
 };
 
 module.exports = { sendOtpEmail };
