@@ -1,5 +1,7 @@
 const axios = require('axios');
 
+process.stderr.write('[MAILER] axios-based mailer loaded\n');
+
 const sendOtpEmail = async (email, otp, expiryMinutes) => {
   if (process.env.NODE_ENV === 'development' && !process.env.RESEND_API_KEY) {
     console.log(`[DEV] OTP for ${email}: ${otp}`);

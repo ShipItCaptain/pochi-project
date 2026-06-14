@@ -23,6 +23,7 @@ RUN npx prisma generate
 
 COPY . .
 
+# cache-bust: 2026-06-14
 EXPOSE 8080
 
 CMD ["node", "server.js"]
