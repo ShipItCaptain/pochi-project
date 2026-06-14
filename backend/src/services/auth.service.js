@@ -90,15 +90,9 @@ const requestOtp = async (phone_number, full_name, email) => {
     organizer = { ...organizer, email: resolvedEmail };
   }
 
-  let _mailDebug;
-  try {
-    await sendOtpEmail(organizer.email, otp, OTP_EXPIRY_MINUTES);
-    _mailDebug = 'ok';
-  } catch (err) {
-    _mailDebug = `ERROR:${err.message}`;
-  }
+  await sendOtpEmail(organizer.email, otp, OTP_EXPIRY_MINUTES);
 
-  return { message: 'OTP sent to your email.', phone_number: organizer.phone_number, _mailDebug };
+  return { message: 'OTP sent to your email.', phone_number: organizer.phone_number };
 };
 
 const verifyOtp = async (phone_number, email, otp) => {

@@ -1,15 +1,12 @@
 const axios = require('axios');
 
-process.stderr.write('[MAILER] axios-based mailer loaded\n');
-
 const sendOtpEmail = async (email, otp, expiryMinutes) => {
-  if (process.env.NODE_ENV === 'development' && !process.env.RESEND_API_KEY) {
-    console.log(`[DEV] OTP for ${email}: ${otp}`);
+  if (!process.env.RESEND_API_KEY) {
+    console.log(`[MAIL] No RESEND_API_KEY — OTP for ${email}: ${otp}`);
     return;
   }
 
-  console.log(`[MAIL] Sending OTP to ${email} via Resend`);
-  await axios.post(
+  const res = await axios.post(
     'https://api.resend.com/emails',
     {
       from: 'Pochi <onboarding@resend.dev>',
@@ -42,7 +39,8 @@ const sendOtpEmail = async (email, otp, expiryMinutes) => {
       },
     }
   );
-  console.log(`[MAIL] OTP sent to ${email} successfully`);
+
+  console.log(`[MAIL] Sent to ${email}, Resend id=${res.data.id}`);
 };
 
 module.exports = { sendOtpEmail };
