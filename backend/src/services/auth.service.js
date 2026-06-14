@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const axios = require('axios');
 const prisma = require('../utils/prisma');
 const { normalizePhone } = require('../utils/phone');
+const { sendOtpEmail } = require('../utils/mailer');
 
 const OTP_EXPIRY_MINUTES = 10;
 const MAX_OTP_ATTEMPTS = 3;
@@ -12,38 +13,27 @@ const generateOtp = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-const sendOtpSms = async (phone, otp) => {
-  if (process.env.NODE_ENV === 'development' || process.env.AT_USERNAME === 'sandbox') {
-    console.log(`[DEV] OTP for ${phone}: ${otp}`);
+const requestOtp = async (phone_number, full_name, email) => {
+  let normalized = null;
+  let organizer = null;
+
+  if (phone_number) {
+    normalized = normalizePhone(phone_number);
+    if (!normalized) {
+      const err = new Error('Invalid phone number.');
+      err.statusCode = 400;
+      throw err;
+    }
+    organizer = await prisma.organizer.findUnique({ where: { phone_number: normalized } });
+  } else {
+    // email-only sign-in path
+    organizer = await prisma.organizer.findFirst({ where: { email }, orderBy: { created_at: 'asc' } });
+    if (!organizer) {
+      const err = new Error('No account found with this email address.');
+      err.statusCode = 404;
+      throw err;
+    }
   }
-
-  if (!process.env.AT_API_KEY) return;
-
-  const AfricasTalking = require('africastalking')({
-    apiKey: process.env.AT_API_KEY,
-    username: process.env.AT_USERNAME,
-  });
-
-  const sms = AfricasTalking.SMS;
-  const smsPayload = {
-    to: [`+${phone}`],
-    message: `Your Pochi verification code is: ${otp}. Valid for ${OTP_EXPIRY_MINUTES} minutes. Do not share this code.`,
-  };
-  if (process.env.AT_USERNAME !== 'sandbox' && process.env.AT_SENDER_ID) {
-    smsPayload.from = process.env.AT_SENDER_ID;
-  }
-  await sms.send(smsPayload);
-};
-
-const requestOtp = async (phone_number, full_name) => {
-  const normalized = normalizePhone(phone_number);
-  if (!normalized) {
-    const err = new Error('Invalid phone number.');
-    err.statusCode = 400;
-    throw err;
-  }
-
-  let organizer = await prisma.organizer.findUnique({ where: { phone_number: normalized } });
 
   if (organizer?.otp_locked_until && organizer.otp_locked_until > new Date()) {
     const unlockIn = Math.ceil((organizer.otp_locked_until - new Date()) / 60000);
@@ -57,8 +47,14 @@ const requestOtp = async (phone_number, full_name) => {
   const otp_hash = await bcrypt.hash(otp, 10);
 
   if (!organizer) {
+    // New account — only reachable when phone_number was provided
     if (!full_name) {
       const err = new Error('Full name is required for new accounts.');
+      err.statusCode = 400;
+      throw err;
+    }
+    if (!email) {
+      const err = new Error('Email is required for new accounts.');
       err.statusCode = 400;
       throw err;
     }
@@ -66,6 +62,7 @@ const requestOtp = async (phone_number, full_name) => {
       data: {
         phone_number: normalized,
         full_name,
+        email,
         password_hash: '',
         otp_code: otp_hash,
         otp_expires_at,
@@ -73,6 +70,12 @@ const requestOtp = async (phone_number, full_name) => {
       },
     });
   } else {
+    const resolvedEmail = email || organizer.email;
+    if (!resolvedEmail) {
+      const err = new Error('No email on file. Please sign up again with your email.');
+      err.statusCode = 400;
+      throw err;
+    }
     await prisma.organizer.update({
       where: { id: organizer.id },
       data: {
@@ -81,24 +84,38 @@ const requestOtp = async (phone_number, full_name) => {
         otp_attempts: 0,
         otp_locked_until: null,
         ...(full_name && !organizer.full_name ? { full_name } : {}),
+        ...(email && !organizer.email ? { email } : {}),
       },
     });
+    organizer = { ...organizer, email: resolvedEmail };
   }
 
-  await sendOtpSms(normalized, otp);
+  let _mailDebug;
+  try {
+    await sendOtpEmail(organizer.email, otp, OTP_EXPIRY_MINUTES);
+    _mailDebug = 'ok';
+  } catch (err) {
+    _mailDebug = `ERROR:${err.message}`;
+  }
 
-  return { message: 'OTP sent successfully.', phone_number: normalized };
+  return { message: 'OTP sent to your email.', phone_number: organizer.phone_number, _mailDebug };
 };
 
-const verifyOtp = async (phone_number, otp) => {
-  const normalized = normalizePhone(phone_number);
-  if (!normalized) {
-    const err = new Error('Invalid phone number.');
-    err.statusCode = 400;
-    throw err;
+const verifyOtp = async (phone_number, email, otp) => {
+  let organizer;
+
+  if (phone_number) {
+    const normalized = normalizePhone(phone_number);
+    if (!normalized) {
+      const err = new Error('Invalid phone number.');
+      err.statusCode = 400;
+      throw err;
+    }
+    organizer = await prisma.organizer.findUnique({ where: { phone_number: normalized } });
+  } else {
+    organizer = await prisma.organizer.findFirst({ where: { email } });
   }
 
-  const organizer = await prisma.organizer.findUnique({ where: { phone_number: normalized } });
   if (!organizer) {
     const err = new Error('Account not found. Request an OTP first.');
     err.statusCode = 404;
@@ -159,7 +176,7 @@ const verifyOtp = async (phone_number, otp) => {
   });
 
   const token = jwt.sign(
-    { id: organizer.id, phone_number: normalized },
+    { id: organizer.id, phone_number: organizer.phone_number },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
@@ -168,7 +185,7 @@ const verifyOtp = async (phone_number, otp) => {
     token,
     organizer: {
       id: organizer.id,
-      phone_number: normalized,
+      phone_number: organizer.phone_number,
       full_name: organizer.full_name,
       email: organizer.email,
       subscription_plan: organizer.subscription_plan,
