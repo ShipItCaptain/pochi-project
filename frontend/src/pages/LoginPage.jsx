@@ -8,18 +8,23 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const setAuth = useAuthStore(s => s.setAuth)
 
-  const [step, setStep] = useState('phone')
-  const [phone, setPhone] = useState('')
+  const [step, setStep] = useState('identifier')
+  const [identifier, setIdentifier] = useState('')
+  const [resolvedPhone, setResolvedPhone] = useState('') // phone returned by requestOtp, used for verify
   const [otp, setOtp] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleRequestOtp = async (e) => {
     e.preventDefault()
-    if (!phone.trim()) return toast.error('Enter your phone number.')
+    const val = identifier.trim()
+    if (!val) return toast.error('Enter your email or phone number.')
+    const isEmail = val.includes('@')
     setLoading(true)
     try {
-      await authApi.requestOtp({ phone_number: phone })
-      toast.success('OTP sent to your phone.')
+      const payload = isEmail ? { email: val } : { phone_number: val }
+      const res = await authApi.requestOtp(payload)
+      setResolvedPhone(res.data.phone_number) // always use the phone returned by server for verify
+      toast.success('OTP sent to your email.')
       setStep('otp')
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to send OTP.')
@@ -33,7 +38,7 @@ export default function LoginPage() {
     if (!otp.trim()) return toast.error('Enter the OTP.')
     setLoading(true)
     try {
-      const res = await authApi.verifyOtp({ phone_number: phone, otp })
+      const res = await authApi.verifyOtp({ phone_number: resolvedPhone, otp })
       setAuth(res.data.token, res.data.organizer)
       toast.success('Welcome back!')
       navigate('/')
@@ -74,37 +79,28 @@ export default function LoginPage() {
           borderRadius: 12,
           padding: 24,
         }}>
-          {step === 'phone' ? (
+          {step === 'identifier' ? (
             <form onSubmit={handleRequestOtp}>
               <div style={{ marginBottom: 20 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#4B5563', marginBottom: 6 }}>
-                  Phone number
+                  Email or phone number
                 </label>
-                <div style={{ display: 'flex' }}>
-                  <div style={{
-                    padding: '10px 12px',
-                    background: '#F7F8FA',
-                    border: '1px solid #E5E7EB',
-                    borderRight: 'none',
-                    borderRadius: '8px 0 0 8px',
-                    fontSize: 14, color: '#4B5563',
-                    display: 'flex', alignItems: 'center',
-                  }}>🇰🇪 +254</div>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={e => setPhone(e.target.value)}
-                    placeholder="7XX XXX XXX"
-                    style={{
-                      flex: 1, padding: '10px 12px',
-                      border: '1px solid #E5E7EB',
-                      borderLeft: 'none',
-                      borderRadius: '0 8px 8px 0',
-                      fontSize: 14, outline: 'none',
-                      background: '#F7F8FA',
-                    }}
-                  />
-                </div>
+                <input
+                  type="text"
+                  value={identifier}
+                  onChange={e => setIdentifier(e.target.value)}
+                  placeholder="you@example.com or 07XX XXX XXX"
+                  autoComplete="username"
+                  style={{
+                    width: '100%', padding: '10px 12px',
+                    border: '1px solid #E5E7EB', borderRadius: 8,
+                    fontSize: 14, outline: 'none',
+                    background: '#F7F8FA', boxSizing: 'border-box',
+                  }}
+                />
+                <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>
+                  We'll send a one-time code to the email on your account.
+                </p>
               </div>
               <button type="submit" disabled={loading} style={{
                 width: '100%', padding: 12,
@@ -118,10 +114,10 @@ export default function LoginPage() {
           ) : (
             <form onSubmit={handleVerifyOtp}>
               <div style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <button type="button" onClick={() => setStep('phone')} style={{
+                <button type="button" onClick={() => { setStep('identifier'); setOtp('') }} style={{
                   background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 18, padding: 0,
                 }}>←</button>
-                <span style={{ fontSize: 13, color: '#4B5563' }}>OTP sent to <strong>{phone}</strong></span>
+                <span style={{ fontSize: 13, color: '#4B5563' }}>OTP sent to your email on file</span>
               </div>
               <div style={{ marginBottom: 20 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#4B5563', marginBottom: 6 }}>

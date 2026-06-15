@@ -11,6 +11,7 @@ export default function SignupPage() {
   const [step, setStep] = useState('details')
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -18,10 +19,11 @@ export default function SignupPage() {
     e.preventDefault()
     if (!fullName.trim()) return toast.error('Enter your full name.')
     if (!phone.trim()) return toast.error('Enter your phone number.')
+    if (!email.trim()) return toast.error('Enter your email address.')
     setLoading(true)
     try {
-      await authApi.requestOtp({ phone_number: phone, full_name: fullName })
-      toast.success('OTP sent to your phone.')
+      await authApi.requestOtp({ phone_number: phone, full_name: fullName, email })
+      toast.success('OTP sent to your email.')
       setStep('otp')
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to send OTP.')
@@ -94,7 +96,7 @@ export default function SignupPage() {
                 />
                 <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>Use your M-Pesa registered name</p>
               </div>
-              <div style={{ marginBottom: 20 }}>
+              <div style={{ marginBottom: 16 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#4B5563', marginBottom: 6 }}>
                   Phone number
                 </label>
@@ -124,6 +126,24 @@ export default function SignupPage() {
                   />
                 </div>
               </div>
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#4B5563', marginBottom: 6 }}>
+                  Email address
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="grace@example.com"
+                  style={{
+                    width: '100%', padding: '10px 12px',
+                    border: '1px solid #E5E7EB', borderRadius: 8,
+                    fontSize: 14, outline: 'none', background: '#F7F8FA',
+                    boxSizing: 'border-box',
+                  }}
+                />
+                <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>Your OTP will be sent here</p>
+              </div>
               <button type="submit" disabled={loading} style={{
                 width: '100%', padding: 12,
                 background: loading ? '#9CA3AF' : '#00A651',
@@ -139,7 +159,7 @@ export default function SignupPage() {
                 <button type="button" onClick={() => setStep('details')} style={{
                   background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 18, padding: 0,
                 }}>←</button>
-                <span style={{ fontSize: 13, color: '#4B5563' }}>OTP sent to <strong>{phone}</strong></span>
+                <span style={{ fontSize: 13, color: '#4B5563' }}>OTP sent to <strong>{email}</strong></span>
               </div>
               <div style={{ marginBottom: 20 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#4B5563', marginBottom: 6 }}>

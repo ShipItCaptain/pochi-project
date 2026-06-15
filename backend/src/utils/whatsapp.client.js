@@ -123,15 +123,24 @@ const isInitializing = () => initializing;
 
 const getGroups = async () => {
   if (!ready || !client) return [];
-  const chats = await client.getChats();
-  return chats
-    .filter(c => c.isGroup)
-    .map(c => ({
-      id: c.id._serialized,
-      name: c.name || c.id._serialized,
-      participants: c.participants?.length || 0,
-    }))
-    .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  try {
+    const chats = await client.getChats();
+    return chats
+      .filter(c => c.isGroup)
+      .map(c => ({
+        id: c.id._serialized,
+        name: c.name || c.id._serialized,
+        participants: c.participants?.length || 0,
+      }))
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  } catch (err) {
+    if (err.message?.includes('detached Frame') || err.message?.includes('Target closed') || err.message?.includes('Session closed')) {
+      console.log('[WhatsApp] Session detached — reconnecting...');
+      ready = false;
+      reinitialize().catch(console.error);
+    }
+    return [];
+  }
 };
 
 const setMessageHandler = (handler) => { messageHandler = handler; };

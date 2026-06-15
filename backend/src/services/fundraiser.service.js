@@ -1,5 +1,6 @@
 const prisma = require('../utils/prisma');
 const { generateAccountReference, generateRegistrationToken } = require('../utils/tokens');
+const whatsappService = require('./whatsapp.service');
 
 const SPARK_FUNDRAISER_LIMIT = 1;
 const SPARK_TARGET_CAP = 30000;
@@ -47,17 +48,26 @@ const listFundraisers = async (organizerId) => {
 const createFundraiser = async (organizerId, data) => {
   await checkSparkLimits(organizerId, data.target_amount);
 
-  let account_reference, reg_token;
-  let attempts = 0;
+  let account_reference;
+  const reg_token = generateRegistrationToken();
 
-  do {
-    account_reference = generateAccountReference();
-    const existing = await prisma.fundraiser.findUnique({ where: { account_reference } });
-    if (!existing) break;
-    attempts++;
-  } while (attempts < 10);
-
-  reg_token = generateRegistrationToken();
+  if (data.account_reference) {
+    const taken = await prisma.fundraiser.findUnique({ where: { account_reference: data.account_reference } });
+    if (taken) {
+      const err = new Error('That account number is already in use. Choose a different one.');
+      err.statusCode = 409;
+      throw err;
+    }
+    account_reference = data.account_reference;
+  } else {
+    let attempts = 0;
+    do {
+      account_reference = generateAccountReference();
+      const existing = await prisma.fundraiser.findUnique({ where: { account_reference } });
+      if (!existing) break;
+      attempts++;
+    } while (attempts < 10);
+  }
 
   return prisma.fundraiser.create({
     data: {
@@ -112,6 +122,7 @@ const updateFundraiser = async (id, organizerId, data) => {
       ...(data.status && { status: data.status }),
       ...(data.whatsapp_group_id !== undefined && { whatsapp_group_id: data.whatsapp_group_id }),
       ...(data.bot_phone_number !== undefined && { bot_phone_number: data.bot_phone_number }),
+      ...(data.bot_language && { bot_language: data.bot_language }),
     },
   });
 };
@@ -154,10 +165,17 @@ const getFundraiserSummary = async (id, organizerId) => {
 
 const connectWhatsapp = async (id, organizerId, { whatsapp_group_id, bot_phone_number }) => {
   await getFundraiser(id, organizerId);
-  return prisma.fundraiser.update({
+  const updated = await prisma.fundraiser.update({
     where: { id },
     data: { whatsapp_group_id, bot_phone_number },
   });
+
+  // Fire-and-forget: announce registration link to the newly connected group
+  whatsappService.sendGroupConnectAnnouncement(updated).catch((err) =>
+    console.error('[WhatsApp] Group connect announcement failed:', err.message)
+  );
+
+  return updated;
 };
 
 module.exports = {

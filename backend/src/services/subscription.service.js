@@ -1,6 +1,5 @@
 const prisma = require('../utils/prisma');
 const darajaService = require('./daraja.service');
-const { normalizePhone } = require('../utils/phone');
 
 const PLANS = [
   { id: 'spark', name: 'Spark', price: 0, duration_months: 0, description: 'Free forever — 1 fundraiser, 20 contributors, KES 30k cap' },
@@ -90,11 +89,18 @@ const activatePlan = async (organizerId, planId, mpesaTransactionId, amountPaid)
 };
 
 const getStatus = async (organizerId) => {
-  const organizer = await prisma.organizer.findUnique({
-    where: { id: organizerId },
-    select: { subscription_plan: true, subscription_status: true, subscription_expires_at: true },
-  });
-  return organizer;
+  const [organizer, latestSub] = await Promise.all([
+    prisma.organizer.findUnique({
+      where: { id: organizerId },
+      select: { subscription_plan: true, subscription_status: true, subscription_expires_at: true },
+    }),
+    prisma.subscription.findFirst({
+      where: { organizer_id: organizerId, status: 'active' },
+      orderBy: { created_at: 'desc' },
+      select: { plan: true },
+    }),
+  ]);
+  return { ...organizer, current_plan_type: latestSub?.plan || null };
 };
 
 const getHistory = async (organizerId) => {

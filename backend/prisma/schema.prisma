@@ -108,6 +108,7 @@ model Fundraiser {
   account_reference         String            @unique @db.VarChar(20)
   whatsapp_group_id         String?           @db.VarChar(100)
   bot_phone_number          String?           @db.VarChar(15)
+  bot_language              String            @default("en") @db.VarChar(2)
   daraja_webhook_registered Boolean           @default(false)
   registration_link_token   String            @unique @db.VarChar(50)
   status                    FundraiserStatus  @default(active)
@@ -159,7 +160,7 @@ model WhatsappMessage {
   id            String        @id @default(uuid())
   fundraiser_id String
   fundraiser    Fundraiser    @relation(fields: [fundraiser_id], references: [id])
-  recipient     String        @db.VarChar(15)
+  recipient     String        @db.VarChar(100)
   message_type  MessageType
   message_body  String
   status        MessageStatus @default(sent)

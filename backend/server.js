@@ -88,15 +88,34 @@ app.post('/v1/admin/reminders/run', authenticate, async (req, res, next) => {
 app.use(notFound);
 app.use(errorHandler);
 
-// Wire WhatsApp group message handler (TOTAL / STATUS commands)
 waClient.setMessageHandler(async (msg) => {
-  if (!msg.body || !msg.from.endsWith('@g.us')) return;
-  const fundraiser = await prisma.fundraiser.findFirst({
-    where: { whatsapp_group_id: msg.from },
-    select: { id: true },
-  });
-  if (!fundraiser) return;
-  await whatsappService.handleIncomingMessage(msg.from, msg.body, fundraiser.id);
+  if (!msg.body) return;
+
+  // Group message
+  if (msg.from.endsWith('@g.us')) {
+    const fundraiser = await prisma.fundraiser.findFirst({
+      where: { whatsapp_group_id: msg.from },
+      select: { id: true },
+    });
+    if (!fundraiser) return;
+    let senderPhone = null;
+    if (msg.author && msg.author.endsWith('@c.us')) {
+      senderPhone = msg.author.replace('@c.us', '');
+    }
+    await whatsappService.handleIncomingMessage(msg.from, msg.body, fundraiser.id, senderPhone, msg.author);
+    return;
+  }
+
+  // DM to the bot — sender phone is always known reliably
+  if (msg.from.endsWith('@c.us')) {
+    const senderPhone = msg.from.replace('@c.us', '');
+    const fundraiser = await prisma.fundraiser.findFirst({
+      where: { contributors: { some: { phone_number: { endsWith: senderPhone.slice(-9) } } } },
+      select: { id: true },
+    });
+    if (!fundraiser) return;
+    await whatsappService.handleIncomingMessage(msg.from, msg.body, fundraiser.id, senderPhone, msg.from);
+  }
 });
 
 const PORT = process.env.PORT || 5000;

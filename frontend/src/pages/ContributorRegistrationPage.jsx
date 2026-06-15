@@ -238,7 +238,7 @@ export default function ContributorRegistrationPage() {
               <div style={{ fontSize: 11, color: '#9CA3AF', lineHeight: 1.5, marginBottom: 10 }}>Use the reference below so Pochi matches your payment automatically.</div>
               {[
                 { l: fundraiser.paybill_number ? 'Paybill number' : 'Till number', v: fundraiser.paybill_number || fundraiser.till_number },
-                { l: 'Account reference', v: fundraiser.account_reference },
+                ...(fundraiser.paybill_number ? [{ l: 'Account number', v: fundraiser.account_reference }] : []),
                 { l: 'Amount', v: `KES ${registered.contributor.pledge_amount.toLocaleString()}`, color: G },
               ].map(row => (
                 <div key={row.l} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: 'rgba(255,255,255,0.07)', borderRadius: 6, marginBottom: 5 }}>

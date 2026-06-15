@@ -1,4 +1,5 @@
 const prisma = require('../utils/prisma');
+const whatsappService = require('./whatsapp.service');
 
 const verifyFundraiserOwner = async (fundraiserId, organizerId) => {
   const fundraiser = await prisma.fundraiser.findUnique({ where: { id: fundraiserId } });
@@ -26,7 +27,7 @@ const listUnmatched = async (fundraiserId, organizerId) => {
 };
 
 const manualMatch = async (fundraiserId, transactionId, contributorId, organizerId) => {
-  await verifyFundraiserOwner(fundraiserId, organizerId);
+  const fundraiser = await verifyFundraiserOwner(fundraiserId, organizerId);
 
   const transaction = await prisma.transaction.findFirst({
     where: { id: transactionId, fundraiser_id: fundraiserId },
@@ -79,6 +80,11 @@ const manualMatch = async (fundraiserId, transactionId, contributorId, organizer
       pledge_status = 'partial';
     }
     await prisma.contributor.update({ where: { id: contributorId }, data: { pledge_status } });
+  }
+
+  if (fundraiser.whatsapp_group_id) {
+    const newTotal = fundraiser.total_paid + transaction.amount;
+    whatsappService.sendPaymentConfirmation(fundraiser, updated, transaction.amount, newTotal).catch(console.error);
   }
 
   return prisma.transaction.findUnique({

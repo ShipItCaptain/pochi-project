@@ -12,6 +12,7 @@ export default function CreateFundraiserPage() {
     description: '',
     target_amount: '',
     paybill_number: '',
+    paybill_account: '',
     till_number: '',
     deadline: '',
   })
@@ -23,6 +24,7 @@ export default function CreateFundraiserPage() {
     if (!form.title.trim()) return toast.error('Enter a fundraiser title.')
     if (!form.target_amount) return toast.error('Enter a target amount.')
     if (!form.paybill_number && !form.till_number) return toast.error('Add a Paybill or Till number.')
+    if (form.paybill_number && !form.paybill_account.trim()) return toast.error('Enter the account number for your paybill.')
 
     setLoading(true)
     try {
@@ -31,6 +33,7 @@ export default function CreateFundraiserPage() {
         description: form.description || undefined,
         target_amount: parseInt(form.target_amount),
         paybill_number: form.paybill_number || undefined,
+        account_reference: form.paybill_number && form.paybill_account.trim() ? form.paybill_account.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : undefined,
         till_number: form.till_number || undefined,
         deadline: form.deadline || undefined,
       })
@@ -99,10 +102,39 @@ export default function CreateFundraiserPage() {
             <h2 style={{ fontSize: 15, fontWeight: 600, color: '#1A1A2E', margin: '0 0 6px' }}>M-Pesa details</h2>
             <p style={{ fontSize: 12, color: '#4B5563', marginBottom: 16 }}>Money goes directly to YOUR Paybill or Till. Pochi never holds funds.</p>
 
-            <div style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: form.paybill_number ? 0 : 16 }}>
               <label style={labelStyle}>Paybill number</label>
               <input value={form.paybill_number} onChange={set('paybill_number')} placeholder="522522" style={inputStyle} />
             </div>
+
+            {form.paybill_number && (
+              <div style={{ marginBottom: 16, marginTop: 12, paddingLeft: 12, borderLeft: '2px solid #00A651' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>Account number <span style={{ color: '#E53935' }}>*</span></label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const ref = 'PCH' + Math.random().toString(36).substring(2, 6).toUpperCase()
+                      setForm(f => ({ ...f, paybill_account: ref }))
+                    }}
+                    style={{ fontSize: 11, color: '#00A651', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 500 }}
+                  >
+                    Auto-generate
+                  </button>
+                </div>
+                <input
+                  value={form.paybill_account}
+                  onChange={set('paybill_account')}
+                  placeholder="e.g. HARAMBEE2025 or your bank account number"
+                  maxLength={30}
+                  style={{ ...inputStyle, borderColor: form.paybill_number && !form.paybill_account.trim() ? '#E53935' : '#E5E7EB' }}
+                />
+                <div style={{ marginTop: 8, padding: '8px 10px', background: '#FFF9E6', border: '1px solid #F59E0B', borderRadius: 7, fontSize: 11, color: '#92400E', lineHeight: 1.6 }}>
+                  <strong>Bank paybill</strong> (Equity 247247, KCB 522522, Co-op 400200, etc.) — enter your <strong>actual bank account number</strong>. Contributors must type it exactly or the money won't reach you.<br />
+                  <strong>Business paybill</strong> (your own shortcode) — enter any memorable reference like <em>HARAMBEE2025</em>, or click Auto-generate.
+                </div>
+              </div>
+            )}
 
             <div>
               <label style={labelStyle}>Or Till number</label>

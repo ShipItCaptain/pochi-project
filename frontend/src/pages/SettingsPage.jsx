@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import Layout from '../components/Layout'
-import { authApi, subscriptionApi } from '../services/api'
+import { authApi, subscriptionApi, whatsappApi } from '../services/api'
 import { useAuthStore } from '../store/auth.store'
 
 const PLANS = [
@@ -21,9 +21,57 @@ export default function SettingsPage() {
   const [subscribing, setSubscribing] = useState(null)
   const [subStatus, setSubStatus] = useState(null)
 
+  // WhatsApp bot state
+  const [waStatus, setWaStatus] = useState({ connected: false, initializing: false })
+  const [waQr, setWaQr] = useState(null)
+  const [waActionLoading, setWaActionLoading] = useState(false)
+
   useEffect(() => {
     subscriptionApi.status().then(r => setSubStatus(r.data)).catch(() => {})
   }, [])
+
+  // Poll every 2s — fast enough to show QR the moment Chrome boots (~20s)
+  useEffect(() => {
+    let cancelled = false
+    const poll = async () => {
+      try {
+        const res = await whatsappApi.qr()
+        if (cancelled) return
+        setWaStatus({ connected: res.data.connected, initializing: res.data.initializing })
+        setWaQr(res.data.qr || null)
+      } catch (_) {}
+    }
+    poll()
+    const interval = setInterval(poll, 2000)
+    return () => { cancelled = true; clearInterval(interval) }
+  }, [])
+
+  const handleWaDisconnect = async () => {
+    setWaActionLoading(true)
+    try {
+      await whatsappApi.disconnect()
+      setWaStatus({ connected: false, initializing: false })
+      setWaQr(null)
+      toast.success('WhatsApp bot disconnected.')
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to disconnect.')
+    } finally {
+      setWaActionLoading(false)
+    }
+  }
+
+  const handleWaReinit = async () => {
+    setWaActionLoading(true)
+    setWaQr(null)
+    try {
+      await whatsappApi.reinit()
+      toast.success('Reconnecting — new QR code will appear shortly.')
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to reconnect.')
+    } finally {
+      setWaActionLoading(false)
+    }
+  }
 
   const handleSaveProfile = async (e) => {
     e.preventDefault()
@@ -127,7 +175,11 @@ export default function SettingsPage() {
 
           <div style={{ display: 'grid', gap: 10 }}>
             {PLANS.map(plan => {
-              const isCurrent = (subStatus?.subscription_plan || organizer?.subscription_plan) === (plan.free ? 'spark' : plan.id.replace('_monthly', '').replace('_quarterly', '').replace('_biannual', '').replace('_annual', ''))
+              const basePlan = subStatus?.subscription_plan || organizer?.subscription_plan
+              const specificPlan = subStatus?.current_plan_type
+              const isCurrent = plan.free
+                ? basePlan === 'spark'
+                : specificPlan === plan.id
               return (
                 <div key={plan.id} style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -163,6 +215,109 @@ export default function SettingsPage() {
               )
             })}
           </div>
+        </div>
+
+        {/* WhatsApp Bot */}
+        <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 12, padding: 24, marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 600, color: '#1A1A2E', margin: 0 }}>WhatsApp Bot</h2>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+              background: waStatus.connected ? '#E8F8EF' : waStatus.initializing ? '#FEF9C3' : '#FEF2F2',
+              color: waStatus.connected ? '#00A651' : waStatus.initializing ? '#B45309' : '#E53935',
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', display: 'inline-block' }} />
+              {waStatus.connected ? 'Connected' : waStatus.initializing ? 'Waiting for scan' : 'Disconnected'}
+            </span>
+          </div>
+          <p style={{ fontSize: 12, color: '#4B5563', marginBottom: 16 }}>
+            Connect a WhatsApp number to send automatic payment updates to your fundraiser groups.
+          </p>
+
+          {waStatus.connected ? (
+            <div>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+                background: '#E8F8EF', border: '1px solid #BBF7D0', borderRadius: 8, marginBottom: 14,
+              }}>
+                <span style={{ fontSize: 20 }}>✅</span>
+                <span style={{ fontSize: 13, color: '#065F46', fontWeight: 500 }}>Bot is active and ready to send messages.</span>
+              </div>
+              <button
+                onClick={handleWaDisconnect}
+                disabled={waActionLoading}
+                style={{
+                  padding: '8px 16px',
+                  background: '#FEF2F2', border: '1px solid #E53935',
+                  color: '#E53935', borderRadius: 8,
+                  fontSize: 13, fontWeight: 600, cursor: waActionLoading ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {waActionLoading ? 'Disconnecting...' : 'Disconnect bot'}
+              </button>
+            </div>
+          ) : (
+            <div>
+              {waQr ? (
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ fontSize: 12, color: '#4B5563', marginBottom: 12 }}>
+                    Open WhatsApp on your bot number → <strong>Linked Devices</strong> → <strong>Link a Device</strong> → scan below
+                  </p>
+                  <div style={{
+                    display: 'inline-block',
+                    padding: 12,
+                    background: '#fff',
+                    border: '2px solid #E5E7EB',
+                    borderRadius: 12,
+                    marginBottom: 12,
+                  }}>
+                    <img src={waQr} alt="WhatsApp QR Code" style={{ width: 200, height: 200, display: 'block' }} />
+                  </div>
+                  <p style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 14 }}>QR code refreshes automatically every 60 seconds</p>
+                  <button
+                    onClick={handleWaReinit}
+                    disabled={waActionLoading}
+                    style={{
+                      padding: '7px 14px',
+                      background: '#F7F8FA', border: '1px solid #E5E7EB',
+                      color: '#4B5563', borderRadius: 8,
+                      fontSize: 12, fontWeight: 500, cursor: waActionLoading ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {waActionLoading ? 'Refreshing...' : 'Refresh QR code'}
+                  </button>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                  {waStatus.initializing ? (
+                    <div>
+                      <div style={{ fontSize: 28, marginBottom: 8 }}>⏳</div>
+                      <p style={{ fontSize: 13, color: '#4B5563', margin: '0 0 4px' }}>Starting WhatsApp bot…</p>
+                      <p style={{ fontSize: 11, color: '#9CA3AF', margin: '0 0 12px' }}>QR code will appear in a few seconds</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <div style={{ fontSize: 28, marginBottom: 8 }}>📵</div>
+                      <p style={{ fontSize: 13, color: '#4B5563', margin: '0 0 12px' }}>Bot is not running.</p>
+                      <button
+                        onClick={handleWaReinit}
+                        disabled={waActionLoading}
+                        style={{
+                          padding: '8px 18px',
+                          background: waActionLoading ? '#9CA3AF' : '#00A651',
+                          color: '#fff', border: 'none', borderRadius: 8,
+                          fontSize: 13, fontWeight: 600, cursor: waActionLoading ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        {waActionLoading ? 'Starting...' : 'Start bot'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Danger zone */}

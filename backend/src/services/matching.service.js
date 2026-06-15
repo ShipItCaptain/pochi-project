@@ -150,9 +150,8 @@ const processIncomingPayment = async (fundraiserId, payload) => {
       data: { total_paid: newTotal },
     });
 
-    // Send WhatsApp group update
     if (fundraiser.whatsapp_group_id) {
-      await whatsappService.sendPaymentConfirmation(fundraiser, matchedContributor, amount, newTotal).catch(console.error);
+      await whatsappService.postLeaderboard(fundraiserId).catch(console.error);
     }
   } else {
     // Unmatched — notify organizer

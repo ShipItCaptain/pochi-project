@@ -27,3 +27,11 @@ coverage/
 
 # Claude Code
 .claude/
+
+# WhatsApp Web session data (sensitive — never commit)
+backend/.wwebjs_auth/
+backend/.wwebjs_cache/
+
+# Vercel env exports
+frontend/.env.vercel
+frontend/.env.vercel.prod

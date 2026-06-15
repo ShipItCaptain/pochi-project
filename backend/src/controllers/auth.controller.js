@@ -2,14 +2,16 @@ const Joi = require('joi');
 const authService = require('../services/auth.service');
 
 const requestOtpSchema = Joi.object({
-  phone_number: Joi.string().required(),
+  phone_number: Joi.string().optional(),
   full_name: Joi.string().max(100).optional(),
-});
+  email: Joi.string().email().max(150).optional(),
+}).or('phone_number', 'email');
 
 const verifyOtpSchema = Joi.object({
-  phone_number: Joi.string().required(),
+  phone_number: Joi.string().optional(),
+  email: Joi.string().email().max(150).optional(),
   otp: Joi.string().length(6).pattern(/^\d+$/).required(),
-});
+}).or('phone_number', 'email');
 
 const updateProfileSchema = Joi.object({
   full_name: Joi.string().max(100).optional(),
@@ -21,7 +23,7 @@ const requestOtp = async (req, res, next) => {
     const { error, value } = requestOtpSchema.validate(req.body);
     if (error) return res.status(400).json({ error: error.details[0].message });
 
-    const result = await authService.requestOtp(value.phone_number, value.full_name);
+    const result = await authService.requestOtp(value.phone_number, value.full_name, value.email);
     res.json(result);
   } catch (err) {
     next(err);
@@ -33,7 +35,7 @@ const verifyOtp = async (req, res, next) => {
     const { error, value } = verifyOtpSchema.validate(req.body);
     if (error) return res.status(400).json({ error: error.details[0].message });
 
-    const result = await authService.verifyOtp(value.phone_number, value.otp);
+    const result = await authService.verifyOtp(value.phone_number, value.email, value.otp);
     res.json(result);
   } catch (err) {
     next(err);

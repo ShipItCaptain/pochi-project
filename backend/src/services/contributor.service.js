@@ -40,7 +40,7 @@ const listContributors = async (fundraiserId, organizerId) => {
 const registerContributor = async (token, { full_name, phone_number, pledge_amount, whatsapp_name }) => {
   const fundraiser = await prisma.fundraiser.findUnique({
     where: { registration_link_token: token },
-    select: { id: true, status: true, title: true, account_reference: true, paybill_number: true, till_number: true, whatsapp_group_id: true, target_amount: true, total_paid: true },
+    select: { id: true, status: true, title: true, account_reference: true, paybill_number: true, till_number: true, whatsapp_group_id: true, target_amount: true, total_paid: true, bot_language: true },
   });
 
   if (!fundraiser) {

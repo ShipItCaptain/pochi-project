@@ -7,6 +7,7 @@ const createSchema = Joi.object({
   description: Joi.string().optional().allow(''),
   target_amount: Joi.number().integer().min(1).required(),
   paybill_number: Joi.string().max(20).optional().allow(''),
+  account_reference: Joi.string().max(30).uppercase().alphanum().optional().allow('', null),
   till_number: Joi.string().max(20).optional().allow(''),
   deadline: Joi.string().isoDate().optional().allow('', null),
 });
@@ -19,6 +20,7 @@ const updateSchema = Joi.object({
   till_number: Joi.string().max(20).optional().allow('', null),
   deadline: Joi.string().isoDate().optional().allow('', null),
   status: Joi.string().valid('active', 'paused', 'closed').optional(),
+  bot_language: Joi.string().valid('en', 'sw').optional(),
 });
 
 const connectWhatsappSchema = Joi.object({

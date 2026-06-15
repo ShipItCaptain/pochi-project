@@ -68,4 +68,12 @@ export const subscriptionApi = {
   history: () => api.get('/subscriptions/history'),
 }
 
+export const whatsappApi = {
+  status: () => api.get('/whatsapp/status'),
+  qr: () => api.get('/whatsapp/qr'),
+  groups: () => api.get('/whatsapp/groups'),
+  disconnect: () => api.post('/whatsapp/disconnect'),
+  reinit: () => api.post('/whatsapp/reinit'),
+}
+
 export default api
