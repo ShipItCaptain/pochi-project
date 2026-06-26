@@ -6,6 +6,7 @@ const darajaCtrl = require('../controllers/daraja.controller');
 
 router.get('/', authenticate, ctrl.list);
 router.post('/', authenticate, ctrl.create);
+router.post('/validate-shortcode', authenticate, darajaCtrl.validateShortcode);
 router.get('/:id', authenticate, ctrl.getOne);
 router.put('/:id', authenticate, ctrl.update);
 router.delete('/:id', authenticate, ctrl.remove);

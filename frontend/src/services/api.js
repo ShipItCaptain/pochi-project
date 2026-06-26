@@ -37,6 +37,7 @@ export const fundraiserApi = {
   update: (id, data) => api.put(`/fundraisers/${id}`, data),
   delete: (id) => api.delete(`/fundraisers/${id}`),
   summary: (id) => api.get(`/fundraisers/${id}/summary`),
+  validateShortcode: (shortcode) => api.post('/fundraisers/validate-shortcode', { shortcode }),
   connectDaraja: (id) => api.post(`/fundraisers/${id}/connect-daraja`),
   connectWhatsapp: (id, data) => api.post(`/fundraisers/${id}/connect-whatsapp`, data),
   exportPdf: (id) => api.get(`/fundraisers/${id}/export/pdf`, { responseType: 'blob' }),
