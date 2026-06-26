@@ -1,21 +1,51 @@
 const nodemailer = require('nodemailer');
+const dns = require('dns');
+const { promisify } = require('util');
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT) || 587,
-  secure: false,
-  family: 4, // Force IPv4 — Railway can't route IPv6 to smtp.gmail.com
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const dnsLookup = promisify(dns.lookup);
+
+// Lazy singleton — created on first send so we can pre-resolve to IPv4.
+// Railway can't route IPv6; nodemailer's family:4 option isn't passed to the
+// underlying socket, so we resolve the hostname ourselves first.
+let _transporter = null;
+
+const getTransporter = async () => {
+  if (_transporter) return _transporter;
+
+  const emailHost = process.env.EMAIL_HOST || 'smtp.gmail.com';
+  let smtpHost = emailHost;
+
+  try {
+    const { address } = await dnsLookup(emailHost, { family: 4 });
+    smtpHost = address;
+    console.log(`[MAIL] Resolved ${emailHost} → ${smtpHost} (IPv4)`);
+  } catch (err) {
+    console.warn('[MAIL] DNS pre-resolve failed, using hostname:', err.message);
+  }
+
+  _transporter = nodemailer.createTransport({
+    host: smtpHost,
+    port: Number(process.env.EMAIL_PORT) || 587,
+    secure: false,
+    tls: {
+      servername: emailHost, // SNI — required when connecting by IP so Gmail's cert validates
+    },
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  return _transporter;
+};
 
 const sendOtpEmail = async (email, otp, expiryMinutes) => {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.log(`[MAIL] No Gmail credentials — OTP for ${email}: ${otp}`);
+    console.log(`[MAIL] No credentials — OTP for ${email}: ${otp}`);
     return;
   }
+
+  const transporter = await getTransporter();
 
   const info = await transporter.sendMail({
     from: process.env.EMAIL_FROM || `Pochi <${process.env.EMAIL_USER}>`,
