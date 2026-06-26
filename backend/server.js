@@ -27,11 +27,18 @@ app.set('trust proxy', 1); // Railway sits behind a reverse proxy
 
 app.use(helmet());
 
+const ALLOWED_ORIGINS = [
+  /^http:\/\/localhost(:\d+)?$/,
+  /^https:\/\/.*-hisocietys-projects\.vercel\.app$/,
+  /^https:\/\/pochi\.co\.ke$/,
+];
+if (process.env.FRONTEND_URL) {
+  try { ALLOWED_ORIGINS.push(new RegExp(`^${process.env.FRONTEND_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`)); } catch (_) {}
+}
+
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || /^http:\/\/localhost(:\d+)?$/.test(origin)) {
-      callback(null, true);
-    } else if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) {
+    if (!origin || ALLOWED_ORIGINS.some(p => p.test(origin))) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
