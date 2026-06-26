@@ -106,15 +106,22 @@ waClient.setMessageHandler(async (msg) => {
     return;
   }
 
-  // DM to the bot — sender phone is always known reliably
-  if (msg.from.endsWith('@c.us')) {
-    const senderPhone = msg.from.replace('@c.us', '');
-    const fundraiser = await prisma.fundraiser.findFirst({
-      where: { contributors: { some: { phone_number: { endsWith: senderPhone.slice(-9) } } } },
-      select: { id: true },
-    });
-    if (!fundraiser) return;
-    await whatsappService.handleIncomingMessage(msg.from, msg.body, fundraiser.id, senderPhone, msg.from);
+  // DM to the bot (@c.us or @lid)
+  if (msg.from.endsWith('@c.us') || msg.from.endsWith('@lid')) {
+    // Active registration conversation takes priority
+    const handled = await whatsappService.handleDmMessage(msg.from, msg.body);
+    if (handled) return;
+
+    // Regular DM commands (STATUS etc) — only reliable when we have a real phone
+    if (msg.from.endsWith('@c.us')) {
+      const senderPhone = msg.from.replace('@c.us', '');
+      const fundraiser = await prisma.fundraiser.findFirst({
+        where: { contributors: { some: { phone_number: { endsWith: senderPhone.slice(-9) } } } },
+        select: { id: true },
+      });
+      if (!fundraiser) return;
+      await whatsappService.handleIncomingMessage(msg.from, msg.body, fundraiser.id, senderPhone, msg.from);
+    }
   }
 });
 

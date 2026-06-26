@@ -1,6 +1,7 @@
 const prisma = require('../utils/prisma');
 const { normalizePhone } = require('../utils/phone');
 const waClient = require('../utils/whatsapp.client');
+const conversation = require('../utils/conversation');
 
 const toChatId = (id) => {
   if (id.includes('@')) return id;
@@ -265,8 +266,13 @@ const handleIncomingMessage = async (from, message, fundraiserId, senderPhone, s
     const contributor = await findContributorByPhone(fundraiserId, senderPhone);
 
     if (!contributor) {
-      const link = `${process.env.FRONTEND_URL}/register/${fundraiser.registration_link_token}`;
-      await sendMessage(from, lang.statusNotFound(link), fundraiserId, 'confirmation');
+      // Start WhatsApp-native registration flow if we have the sender's WA ID
+      if (senderWaId) {
+        await startRegistrationConversation(senderWaId, fundraiserId, from, pledgeAmount, fundraiser);
+      } else {
+        const link = `${process.env.FRONTEND_URL}/register/${fundraiser.registration_link_token}`;
+        await sendMessage(from, lang.statusNotFound(link), fundraiserId, 'confirmation');
+      }
       return;
     }
 
@@ -297,6 +303,147 @@ const handleIncomingMessage = async (from, message, fundraiserId, senderPhone, s
   }
 };
 
+const dmSend = async (waId, text) => {
+  const client = waClient.getClient();
+  if (client) {
+    try { await client.sendMessage(waId, text); } catch (e) { console.error('[WA DM]', e.message); }
+  }
+};
+
+const startRegistrationConversation = async (waId, fundraiserId, groupId, pledgeAmount, fundraiser) => {
+  conversation.set(
+    waId,
+    'waiting_for_name',
+    { fundraiserId, groupId, pledgeAmount },
+    () => dmSend(waId, `⏰ Registration timed out. Type *pledge <amount>* in the group to start again.`)
+  );
+
+  await dmSend(waId,
+    `👋 Hi! I noticed you pledged *KES ${pledgeAmount.toLocaleString()}* for *${fundraiser.title}*.\n\n` +
+    `Let's get you registered so we can track your M-Pesa payment! 🎉\n\n` +
+    `What's your full name?`
+  );
+};
+
+const handleDmMessage = async (waId, message) => {
+  const session = conversation.get(waId);
+  if (!session) return false;
+
+  const { step, data } = session;
+  const text = message.trim();
+
+  if (text.toUpperCase() === 'CANCEL') {
+    conversation.clear(waId);
+    await dmSend(waId, `❌ Registration cancelled. Type *pledge <amount>* in the group to start again anytime.`);
+    return true;
+  }
+
+  if (step === 'waiting_for_name') {
+    if (text.length < 2 || /^\d+$/.test(text)) {
+      await dmSend(waId, `⚠️ Please enter your full name (e.g. Brian Mutunga).`);
+      return true;
+    }
+    conversation.update(waId, 'waiting_for_phone', { ...data, name: text });
+    await dmSend(waId,
+      `Thanks *${text}*! 👍\n\n` +
+      `What's your Safaricom number? (e.g. 0707110120)\n\n` +
+      `_This is used to automatically match your M-Pesa payment._`
+    );
+    return true;
+  }
+
+  if (step === 'waiting_for_phone') {
+    const normalized = normalizePhone(text);
+    if (!normalized) {
+      await dmSend(waId, `⚠️ That doesn't look like a valid Kenyan number. Try again (e.g. 0707110120).`);
+      return true;
+    }
+
+    const existing = await prisma.contributor.findFirst({
+      where: { fundraiser_id: data.fundraiserId, phone_number: normalized },
+    });
+    if (existing) {
+      conversation.clear(waId);
+      await dmSend(waId, `⚠️ The number *${text}* is already registered under *${existing.full_name}*.`);
+      return true;
+    }
+
+    const fundraiser = await prisma.fundraiser.findUnique({
+      where: { id: data.fundraiserId },
+      select: { title: true, paybill_number: true, till_number: true, account_reference: true },
+    });
+
+    conversation.update(waId, 'waiting_for_confirmation', { ...data, phone: normalized, rawPhone: text, fundraiser });
+    await dmSend(waId,
+      `Here's your registration summary:\n\n` +
+      `👤 *Name:* ${data.name}\n` +
+      `📱 *Phone:* ${text}\n` +
+      `💰 *Pledge:* KES ${data.pledgeAmount.toLocaleString()}\n` +
+      `🏦 *Fundraiser:* ${fundraiser.title}\n\n` +
+      `Reply *YES* to confirm or *NO* to cancel.`
+    );
+    return true;
+  }
+
+  if (step === 'waiting_for_confirmation') {
+    const answer = text.toUpperCase();
+
+    if (answer === 'NO') {
+      conversation.clear(waId);
+      await dmSend(waId, `❌ Registration cancelled. Type *pledge <amount>* in the group to start again anytime.`);
+      return true;
+    }
+
+    if (answer !== 'YES') {
+      await dmSend(waId, `Please reply *YES* to confirm or *NO* to cancel.`);
+      return true;
+    }
+
+    const { fundraiserId, groupId, pledgeAmount, name, phone, fundraiser } = data;
+
+    try {
+      await prisma.contributor.create({
+        data: {
+          fundraiser_id: fundraiserId,
+          full_name: name,
+          phone_number: phone,
+          pledge_amount: pledgeAmount,
+          pledge_status: 'pledged',
+        },
+      });
+
+      await prisma.fundraiser.update({
+        where: { id: fundraiserId },
+        data: { total_pledged: { increment: pledgeAmount } },
+      });
+
+      const payTo = fundraiser.paybill_number
+        ? `Paybill *${fundraiser.paybill_number}*`
+        : `Till *${fundraiser.till_number}*`;
+
+      conversation.clear(waId);
+
+      await dmSend(waId,
+        `✅ You're registered, *${name}*!\n\n` +
+        `Your pledge of *KES ${pledgeAmount.toLocaleString()}* has been recorded for *${fundraiser.title}*.\n\n` +
+        `💳 Send your M-Pesa to ${payTo}\n` +
+        `🔑 Reference: *${fundraiser.account_reference}*`
+      );
+
+      if (groupId) await postLeaderboard(fundraiserId);
+
+    } catch (err) {
+      conversation.clear(waId);
+      console.error('[WA Registration]', err.message);
+      await dmSend(waId, `⚠️ Something went wrong. Please try registering via the link instead.`);
+    }
+
+    return true;
+  }
+
+  return false;
+};
+
 module.exports = {
   postLeaderboard,
   sendRegistrationConfirmation,
@@ -304,4 +451,5 @@ module.exports = {
   notifyUnmatched,
   sendGroupConnectAnnouncement,
   handleIncomingMessage,
+  handleDmMessage,
 };
