@@ -23,11 +23,16 @@ export default function LoginPage() {
     try {
       const payload = isEmail ? { email: val } : { phone_number: val }
       const res = await authApi.requestOtp(payload)
-      setResolvedPhone(res.data.phone_number) // always use the phone returned by server for verify
-      toast.success('OTP sent to your email.')
+      setResolvedPhone(res.data.phone_number)
+      toast.success('OTP sent! Check your email.')
       setStep('otp')
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to send OTP.')
+      const msg = err.response?.data?.error
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        toast.error('Request timed out. Please try again.')
+      } else {
+        toast.error(msg || 'Could not send OTP. Try again.')
+      }
     } finally {
       setLoading(false)
     }
