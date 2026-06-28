@@ -1,3 +1,4 @@
+import React from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const G = '#00A651'
@@ -305,6 +306,160 @@ function Features() {
   )
 }
 
+// ─── Testimonials ────────────────────────────────────────────────────────────
+function Testimonials() {
+  const reviews = [
+    {
+      quote: 'We used to spend the whole Sunday afternoon matching M-Pesa messages to names in a notebook. Now Pochi does it before the service ends. It has saved us hours every week.',
+      name: 'Grace W.',
+      role: 'Church treasurer · Nairobi',
+      initial: 'G',
+      color: '#7C3AED',
+    },
+    {
+      quote: 'Our chama has 24 members and monthly contributions were a nightmare to track. Someone always disputed the records. Since Pochi, every payment is logged automatically and nobody argues anymore.',
+      name: 'James O.',
+      role: 'Chama chairman · Mombasa',
+      initial: 'J',
+      color: '#0369A1',
+    },
+    {
+      quote: 'I ran the school levy for 180 families. Pochi matched every M-Pesa payment and posted updates to our parents WhatsApp group automatically. Parents loved seeing the leaderboard.',
+      name: 'Sarah K.',
+      role: 'Parents committee · Kisumu',
+      initial: 'S',
+      color: '#B45309',
+    },
+  ]
+  return (
+    <section style={{ background: '#fff', padding: '72px 24px' }}>
+      <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 48 }}>
+          <h2 style={{ fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: 800, color: NAVY, margin: '0 0 12px' }}>
+            Organizers across Kenya trust Pochi
+          </h2>
+          <p style={{ fontSize: 15, color: '#4B5563' }}>
+            From church collections to chama drives to school levies.
+          </p>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
+          {reviews.map((r, i) => (
+            <div key={i} style={{
+              background: LIGHT, borderRadius: 16, padding: '28px 24px',
+              border: '1px solid #E5E7EB', display: 'flex', flexDirection: 'column', gap: 20,
+            }}>
+              {/* Stars */}
+              <div style={{ color: '#F59E0B', fontSize: 16, letterSpacing: 2 }}>★★★★★</div>
+              {/* Quote */}
+              <p style={{ fontSize: 14, color: '#374151', lineHeight: 1.7, margin: 0, flex: 1 }}>
+                "{r.quote}"
+              </p>
+              {/* Author */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: '50%',
+                  background: r.color, color: '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontWeight: 700, fontSize: 16, flexShrink: 0,
+                }}>{r.initial}</div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: NAVY }}>{r.name}</div>
+                  <div style={{ fontSize: 12, color: '#6B7280' }}>{r.role}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── FAQ ──────────────────────────────────────────────────────────────────────
+function Faq() {
+  const items = [
+    {
+      q: 'Is my money safe if Pochi has a problem?',
+      a: 'Absolutely. Money never touches Pochi — it goes directly to your Paybill or Till. If Pochi went offline tomorrow, your M-Pesa setup would be completely unaffected. Contributions would still arrive in your account as normal.',
+    },
+    {
+      q: 'Does it work with Equity, KCB, Co-op and other bank Paybills?',
+      a: 'Yes. Pochi works with any Safaricom Paybill or Buy Goods Till — including bank Paybills from Equity (247247), KCB (522522), Co-op (400200), and others, as well as your own business Paybill or Till.',
+    },
+    {
+      q: 'How does the WhatsApp bot get added to my group?',
+      a: 'From your Pochi dashboard, go to the fundraiser and click "Connect WhatsApp Group". You\'ll see a list of your WhatsApp groups — select the right one. The bot joins automatically. No technical steps needed.',
+    },
+    {
+      q: 'Can contributors register and pledge without leaving WhatsApp?',
+      a: 'Yes. When a contributor sends "pledge 1000" in the group, Pochi DMs them to register their name and Safaricom number — entirely inside WhatsApp. No links, no forms, no app downloads.',
+    },
+    {
+      q: 'What if a payment doesn\'t get matched automatically?',
+      a: 'Unmatched payments appear in your dashboard under "Unmatched Transactions". You can match them manually with one click. This can happen when someone pays from a number not registered with Pochi.',
+    },
+    {
+      q: 'What happens when I hit the free plan limit?',
+      a: 'The Spark (free) plan allows 1 fundraiser, up to 20 contributors, and a KES 30,000 target. When you need more, upgrade to Pro (KES 999/month) for unlimited everything. You can upgrade at any time from Settings.',
+    },
+  ]
+
+  return (
+    <section style={{ background: LIGHT, padding: '72px 24px' }}>
+      <div style={{ maxWidth: 720, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 48 }}>
+          <h2 style={{ fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: 800, color: NAVY, margin: '0 0 12px' }}>
+            Frequently asked questions
+          </h2>
+          <p style={{ fontSize: 15, color: '#4B5563' }}>
+            Everything you need to know before getting started.
+          </p>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {items.map((item, i) => (
+            <FaqItem key={i} q={item.q} a={item.a} />
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function FaqItem({ q, a }) {
+  const [open, setOpen] = React.useState(false)
+  return (
+    <div style={{
+      background: '#fff', borderRadius: 12,
+      border: `1px solid ${open ? 'rgba(0,166,81,0.3)' : '#E5E7EB'}`,
+      overflow: 'hidden', transition: 'border-color 0.2s',
+    }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '18px 20px', background: 'none', border: 'none', cursor: 'pointer',
+          textAlign: 'left', gap: 12,
+        }}
+      >
+        <span style={{ fontSize: 15, fontWeight: 600, color: NAVY, lineHeight: 1.4 }}>{q}</span>
+        <span style={{
+          flexShrink: 0, width: 24, height: 24, borderRadius: '50%',
+          background: open ? G : '#F3F4F6',
+          color: open ? '#fff' : '#6B7280',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 18, fontWeight: 700, lineHeight: 1,
+          transition: 'background 0.2s, color 0.2s',
+        }}>{open ? '−' : '+'}</span>
+      </button>
+      {open && (
+        <div style={{ padding: '0 20px 18px', fontSize: 14, color: '#4B5563', lineHeight: 1.7 }}>
+          {a}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Pricing ──────────────────────────────────────────────────────────────────
 function Pricing() {
   const nav = useNavigate()
@@ -462,6 +617,8 @@ export default function LandingPage() {
       <HowItWorks />
       <TrustBanner />
       <Features />
+      <Testimonials />
+      <Faq />
       <Pricing />
       <FinalCta />
       <Footer />
