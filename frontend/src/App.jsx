@@ -11,10 +11,16 @@ import UnmatchedResolvePage from './pages/UnmatchedResolvePage'
 import ExportPage from './pages/ExportPage'
 import SettingsPage from './pages/SettingsPage'
 import ContributorRegistrationPage from './pages/ContributorRegistrationPage'
+import LandingPage from './pages/LandingPage'
 
 const PrivateRoute = ({ children }) => {
   const token = useAuthStore(s => s.token)
   return token ? children : <Navigate to="/login" replace />
+}
+
+const Home = () => {
+  const token = useAuthStore(s => s.token)
+  return token ? <DashboardPage /> : <LandingPage />
 }
 
 export default function App() {
@@ -22,11 +28,11 @@ export default function App() {
     <BrowserRouter>
       <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
       <Routes>
+        <Route path="/" element={<Home />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/register/:token" element={<ContributorRegistrationPage />} />
 
-        <Route path="/" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
         <Route path="/fundraisers/new" element={<PrivateRoute><CreateFundraiserPage /></PrivateRoute>} />
         <Route path="/fundraisers/:id" element={<PrivateRoute><FundraiserDetailPage /></PrivateRoute>} />
         <Route path="/fundraisers/:id/unmatched" element={<PrivateRoute><UnmatchedResolvePage /></PrivateRoute>} />
